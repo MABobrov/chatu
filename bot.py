@@ -27,7 +27,7 @@ httpx_logger.setLevel(logging.WARNING)
 botNick = config.NICK.lower() if config.NICK else None
 botNicKLength = len(botNick) if botNick else 0
 print("nick:", botNick)
-translator_prompt = "You are a translation engine, you can only translate text and cannot interpret it, and do not explain. Translate the text to {}, please do not explain any sentences, just translate or leave them as they are. this is the content you need to translate: "
+translator_prompt = "Вы - система перевода, вы можете только переводить текст, но не можете его интерпретировать и не объяснять. Переведите текст на {}, пожалуйста, не объясняйте предложения, просто переведите или оставьте их как есть. вот содержание, которое вам нужно перевести: "
 @decorators.Authorization
 async def command_bot(update, context, language=None, prompt=translator_prompt, title="", robot=None, has_command=True):
     if config.SEARCH_USE_GPT and not has_command:
@@ -47,17 +47,17 @@ async def command_bot(update, context, language=None, prompt=translator_prompt, 
         else:
             message = await context.bot.send_message(
                 chat_id=update.message.chat_id,
-                text="请在命令后面放入文本。",
+                text="Пожалуйста, поместите текст после команды.",
                 parse_mode='MarkdownV2',
                 reply_to_message_id=update.message.message_id,
             )
     else:
         if update.message.reply_to_message.document is None:
             message = (
-                f"格式错误哦~，需要回复一个文件，我才知道你要针对哪个文件提问，注意命令与问题之间的空格\n\n"
-                f"请输入 `要问的问题`\n\n"
-                f"例如已经上传某文档 ，问题是 蘑菇怎么分类？\n\n"
-                f"先左滑文档进入回复模式，在聊天框里面输入 `蘑菇怎么分类？`\n\n"
+                f"Ошибка форматирования oh~, нужно ответить на файл, чтобы я знал, о каком файле вы хотите задать вопрос, обратите внимание на пробел между командой и вопросом\n\n"
+                f"Пожалуйста, введите `тематику вопроса, который будет задан`.\n\n"
+                f"Например, загружен документ, и вопрос о том, как распределить грибы по категориям.？\n\n"
+                f"Ответить на сообщение введите в поле чата вопрос -`Как сортировать грибы？`\n\n"
             )
             await context.bot.send_message(chat_id=update.effective_chat.id, text=escape(message), parse_mode='MarkdownV2', disable_web_page_preview=True)
             return
@@ -84,7 +84,7 @@ async def reset_chat(update, context):
         config.ChatGPTbot.reset(convo_id=str(update.message.chat_id), system_prompt=config.systemprompt)
     await context.bot.send_message(
         chat_id=update.message.chat_id,
-        text="重置成功！",
+        text="Контекст очищен！",
     )
 
 async def getChatGPT(update, context, title, robot, message, use_search=config.SEARCH_USE_GPT, has_command=True):
@@ -94,7 +94,7 @@ async def getChatGPT(update, context, title, robot, message, use_search=config.S
     lastresult = ''
     message = await context.bot.send_message(
         chat_id=update.message.chat_id,
-        text="思考中💭",
+        text="хмм...💭",
         parse_mode='MarkdownV2',
         reply_to_message_id=update.message.message_id,
     )
@@ -165,7 +165,7 @@ async def getChatGPT(update, context, title, robot, message, use_search=config.S
             await context.bot.delete_message(chat_id=update.message.chat_id, message_id=messageid)
             messageid = ''
             config.API = ''
-        result += f"`出错啦！{e}`"
+        result += f"`Упс ошибка(！{e}`"
     print(result)
     if lastresult != result and messageid:
         if 'claude2' in title:
@@ -216,16 +216,16 @@ buttons = [
 
 first_buttons = [
     [
-        InlineKeyboardButton("更换问答模型", callback_data="更换问答模型"),
-        InlineKeyboardButton("更换搜索模型", callback_data="更换搜索模型"),
+        InlineKeyboardButton("Замена модели вопросов и ответов", callback_data="Замена модели вопросов и ответов"),
+        InlineKeyboardButton("Замена поисковой модели", callback_data="Замена поисковой модели"),
     ],
     [
-        InlineKeyboardButton("历史记录已关闭", callback_data="历史记录"),
-        InlineKeyboardButton("google已打开", callback_data="google"),
+        InlineKeyboardButton("История закрыта", callback_data="История закрыта"),
+        InlineKeyboardButton("google", callback_data="google"),
     ],
     [
-        InlineKeyboardButton("搜索已打开", callback_data="搜索"),
-        InlineKeyboardButton("联网解析PDF已打开", callback_data="pdf"),
+        InlineKeyboardButton("Поиск", callback_data="Поиск"),
+        InlineKeyboardButton("анализ PDF", callback_data="pdf"),
     ],
     [
         InlineKeyboardButton("gpt4free已关闭", callback_data="gpt4free"),
@@ -235,18 +235,26 @@ if os.environ.get('GOOGLE_API_KEY', None) == None and os.environ.get('GOOGLE_CSE
     first_buttons[1][1] = InlineKeyboardButton("google已关闭", callback_data="google")
 
 
-banner = "👇下面可以随时更改默认 gpt 模型："
+banner = "👇Модель gpt, используемая по умолчанию, может быть изменена в любое время ниже:"
 async def button_press(update, context):
-    """Function to handle the button press"""
-    info_message = (
-        f"`Hi, {update.effective_user.username}!`\n\n"
-        f"**Default engine:** `{config.GPT_ENGINE}`\n"
-        f"**Default search model:** `{config.DEFAULT_SEARCH_MODEL}`\n"
-        f"**temperature:** `{config.temperature}`\n"
-        f"**API_URL:** `{config.API_URL}`\n\n"
-        f"**API:** `{config.API}`\n\n"
-        f"**WEB_HOOK:** `{config.WEB_HOOK}`\n\n"
-    )
+    """Handles the button press event"""
+    
+    user = update.effective_user.username
+    engine = config.GPT_ENGINE
+    model = config.DEFAULT_SEARCH_MODEL
+    temperature = config.temperature
+    api_url = config.API_URL
+    api = config.API
+    web_hook = config.WEB_HOOK
+    
+    info_message = (f"**Hello,**`{user}`!\n" \
+                   f"**Default Engine:** `{engine}`\n" \
+                   f"**Default Search Model:** `{model}`\n" \
+                   f"**Temperature:** `{temperature}`\n" \
+                   f"**API URL:** `{api_url}`\n\n" \
+                   f"**API:** `{api}`\n\n" \
+                   f"**Web Hook:** `{web_hook}`\n\n"
+                   )
     callback_query = update.callback_query
     await callback_query.answer()
     data = callback_query.data
@@ -276,32 +284,32 @@ async def button_press(update, context):
         except Exception as e:
             logger.info(e)
             pass
-    elif "更换问答模型" in data:
+    elif "Замена модели вопросов и ответов" in data:
         message = await callback_query.edit_message_text(
             text=escape(info_message + banner),
             reply_markup=InlineKeyboardMarkup(buttons),
             parse_mode='MarkdownV2'
         )
         config.ENGINE_FLAG = True
-    elif "更换搜索模型" in data:
+    elif "Замена модели поиска" in data:
         message = await callback_query.edit_message_text(
             text=escape(info_message + banner),
             reply_markup=InlineKeyboardMarkup(buttons),
             parse_mode='MarkdownV2'
         )
         config.ENGINE_FLAG = False
-    elif "返回" in data:
+    elif "Назад" in data:
         message = await callback_query.edit_message_text(
             text=escape(info_message),
             reply_markup=InlineKeyboardMarkup(first_buttons),
             parse_mode='MarkdownV2'
         )
-    elif "历史记录" in data:
+    elif "Справка по истории" in data:
         config.PASS_HISTORY = not config.PASS_HISTORY
         if config.PASS_HISTORY == False:
-            first_buttons[1][0] = InlineKeyboardButton("历史记录已关闭", callback_data="历史记录")
+            first_buttons[1][0] = InlineKeyboardButton("отключить Историю", callback_data="отключить Историю")
         else:
-            first_buttons[1][0] = InlineKeyboardButton("历史记录已打开", callback_data="历史记录")
+            first_buttons[1][0] = InlineKeyboardButton("Открыть историю", callback_data="Открыть историю")
         info_message = (
             f"`Hi, {update.effective_user.username}!`\n\n"
             f"**Default engine:** `{config.GPT_ENGINE}`\n"
@@ -316,22 +324,22 @@ async def button_press(update, context):
             reply_markup=InlineKeyboardMarkup(first_buttons),
             parse_mode='MarkdownV2'
         )
-    elif "搜索" in data:
+    elif "Искать что-то" in data:
         config.SEARCH_USE_GPT = not config.SEARCH_USE_GPT
         if config.SEARCH_USE_GPT == False:
-            first_buttons[2][0] = InlineKeyboardButton("搜索已关闭", callback_data="搜索")
+            first_buttons[2][0] = InlineKeyboardButton("Отключен поиск", callback_data="Отключен поиск")
         else:
-            first_buttons[2][0] = InlineKeyboardButton("搜索已打开", callback_data="搜索")
+            first_buttons[2][0] = InlineKeyboardButton("Включен поиск", callback_data="Включен поиск")
 
-        info_message = (
-            f"`Hi, {update.effective_user.username}!`\n\n"
-            f"**Default engine:** `{config.GPT_ENGINE}`\n"
-            f"**Default search model:** `{config.DEFAULT_SEARCH_MODEL}`\n"
-            f"**temperature:** `{config.temperature}`\n"
-            f"**API_URL:** `{config.API_URL}`\n\n"
-            f"**API:** `{config.API}`\n\n"
-            f"**WEB_HOOK:** `{config.WEB_HOOK}`\n\n"
-        )
+            info_message = (
+                f"`Hi, {update.effective_user.username}!`\n\n"
+                f"**Default engine:** `{config.GPT_ENGINE}`\n"
+                f"**Default search model:** `{config.DEFAULT_SEARCH_MODEL}`\n"
+                f"**temperature:** `{config.temperature}`\n"
+                f"**API_URL:** `{config.API_URL}`\n\n"
+                f"**API:** `{config.API}`\n\n"
+                f"**WEB_HOOK:** `{config.WEB_HOOK}`\n\n"
+            )
 
         message = await callback_query.edit_message_text(
             text=escape(info_message),
@@ -343,19 +351,19 @@ async def button_press(update, context):
             return
         config.USE_GOOGLE = not config.USE_GOOGLE
         if config.USE_GOOGLE == False:
-            first_buttons[1][1] = InlineKeyboardButton("google已关闭", callback_data="google")
+            first_buttons[1][1] = InlineKeyboardButton("google закрыт", callback_data="google")
         else:
-            first_buttons[1][1] = InlineKeyboardButton("google已打开", callback_data="google")
+            first_buttons[1][1] = InlineKeyboardButton("google открыт", callback_data="google")
 
-        info_message = (
-            f"`Hi, {update.effective_user.username}!`\n\n"
-            f"**Default engine:** `{config.GPT_ENGINE}`\n"
-            f"**Default search model:** `{config.DEFAULT_SEARCH_MODEL}`\n"
-            f"**temperature:** `{config.temperature}`\n"
-            f"**API_URL:** `{config.API_URL}`\n\n"
-            f"**API:** `{config.API}`\n\n"
-            f"**WEB_HOOK:** `{config.WEB_HOOK}`\n\n"
-        )
+            info_message = (
+                f"`Hi, {update.effective_user.username}!`\n\n"
+                f"**Default engine:** `{config.GPT_ENGINE}`\n"
+                f"**Default search model:** `{config.DEFAULT_SEARCH_MODEL}`\n"
+                f"**temperature:** `{config.temperature}`\n"
+                f"**API_URL:** `{config.API_URL}`\n\n"
+                f"**API:** `{config.API}`\n\n"
+                f"**WEB_HOOK:** `{config.WEB_HOOK}`\n\n"
+            )
         message = await callback_query.edit_message_text(
             text=escape(info_message),
             reply_markup=InlineKeyboardMarkup(first_buttons),
@@ -364,9 +372,9 @@ async def button_press(update, context):
     elif "pdf" in data:
         config.PDF_EMBEDDING = not config.PDF_EMBEDDING
         if config.PDF_EMBEDDING == False:
-            first_buttons[2][1] = InlineKeyboardButton("联网解析PDF已关闭", callback_data="pdf")
+            first_buttons[2][1] = InlineKeyboardButton("анализ PDF закрыт", callback_data="pdf")
         else:
-            first_buttons[2][1] = InlineKeyboardButton("联网解析PDF已打开", callback_data="pdf")
+            first_buttons[2][1] = InlineKeyboardButton("анализ PDF открыт", callback_data="pdf")
 
         info_message = (
             f"`Hi, {update.effective_user.username}!`\n\n"
@@ -386,9 +394,9 @@ async def button_press(update, context):
         config.USE_G4F = not config.USE_G4F
         print(config.USE_G4F)
         if config.USE_G4F == False:
-            first_buttons[3][0] = InlineKeyboardButton("gpt4free已关闭", callback_data="gpt4free")
+            first_buttons[3][0] = InlineKeyboardButton("gpt4free не работает", callback_data="gpt4free")
         else:
-            first_buttons[3][0] = InlineKeyboardButton("gpt4free已打开", callback_data="gpt4free")
+            first_buttons[3][0] = InlineKeyboardButton("gpt4free не рабочий", callback_data="gpt4free")
 
         info_message = (
             f"`Hi, {update.effective_user.username}!`\n\n"
@@ -440,10 +448,10 @@ async def handle_pdf(update, context):
         if not match_embedding:
             persist_emdedding_pdf(file_url, persist_db_path)
         message = (
-            f"已成功解析文档！\n\n"
-            f"请输入 `要问的问题`\n\n"
-            f"例如已经上传某文档 ，问题是 蘑菇怎么分类？\n\n"
-            f"先左滑文档进入回复模式，并在聊天框里面输入 `蘑菇怎么分类？`\n\n"
+            f"Я прочитал документ！\n\n"
+            f"Задайте вопрос\n\n"
+            f"Чем конкретней он будет сформулирован\n\n"
+            f"Тем точней я отвечу`\n\n"
         )
         await context.bot.send_message(chat_id=update.effective_chat.id, text=escape(message), parse_mode='MarkdownV2', disable_web_page_preview=True)
         return
@@ -456,15 +464,15 @@ async def handle_pdf(update, context):
 async def qa(update, context):
     if (len(context.args) != 2):
         message = (
-            f"格式错误哦~，需要两个参数，注意路径或者链接、问题之间的空格\n\n"
-            f"请输入 `/qa 知识库链接 要问的问题`\n\n"
-            f"例如知识库链接为 https://abc.com ，问题是 蘑菇怎么分类？\n\n"
-            f"则输入 `/qa https://abc.com 蘑菇怎么分类？`\n\n"
-            f"问题务必不能有空格，👆点击上方命令复制格式\n\n"
-            f"除了输入网址，同时支持本地知识库，本地知识库文件夹路径为 `./wiki`，问题是 蘑菇怎么分类？\n\n"
-            f"则输入 `/qa ./wiki 蘑菇怎么分类？`\n\n"
-            f"问题务必不能有空格，👆点击上方命令复制格式\n\n"
-            f"本地知识库目前只支持 Markdown 文件\n\n"
+            f"Ошибка форматирования, требуется два параметра, обратите внимание на пробел между путем или ссылкой и вопросом.\n\n"
+            f"Пожалуйста, введите Ссылка на базу знаний Вопрос, который нужно задать\n\n"
+            f"Например, ссылка базы знаний - https://abc.com, а вопрос - Как классифицируются грибы?\n\n"
+            f"Тогда введите https://abc.com Как классифицируются грибы?\n\n"
+            f"Убедитесь, что в вопросе нет пробелов, 👆 Нажмите на команду выше, чтобы скопировать формат.\n\n"
+            f"Помимо ввода URL, поддерживается также локальная база знаний, путь к папке локальной базы знаний - . , вопрос в том, как классифицировать грибы?\n\n"
+            f"Затем введите . Как классифицируются грибы?\n\n"
+            f"Убедитесь, что в вопросе нет пробелов, 👆 Нажмите на команду выше, чтобы скопировать формат.\n\n"
+            f"В настоящее время локальная база знаний поддерживает только файлы формата Markdown.\n\n"
         )
         await context.bot.send_message(chat_id=update.effective_chat.id, text=escape(message), parse_mode='MarkdownV2', disable_web_page_preview=True)
         return
@@ -476,7 +484,7 @@ async def qa(update, context):
     # source_url = "\n".join(source_url)
     # message = (
     #     f"{result['result']}\n\n"
-    #     f"参考链接：\n"
+    #     f"ссылка：\n"
     #     f"{source_url}"
     # )
     await context.bot.send_message(chat_id=update.message.chat_id, text=escape(result["answer"]), parse_mode='MarkdownV2', disable_web_page_preview=True)
@@ -484,9 +492,9 @@ async def qa(update, context):
 async def start(update, context): # 当用户输入/start时，返回文本
     user = update.effective_user
     message = (
-        "我是人见人爱的 ChatGPT~\n\n"
-        "欢迎访问 https://github.com/yym68686/ChatGPT-Telegram-Bot 查看源码\n\n"
-        "有 bug 可以联系 @yym68686"
+        "Привет я ChatGPT~\n\n"
+        "Если у вас есть какие-либо ошибки, пожалуйста, свяжитесь с \n\n"
+        "@makconmsk"
     )
     await update.message.reply_html(rf"Hi {user.mention_html()} ! I am an Assistant, a large language model trained by OpenAI. I will do my best to help answer your questions.",)
     await update.message.reply_text(escape(message), parse_mode='MarkdownV2', disable_web_page_preview=True)
